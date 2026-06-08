@@ -1,6 +1,10 @@
 __pycache__/
+.DS_Store
 *.py[cod]
 *.so
+src/neuromass/models/kuramoto/_native/c_backend_wrapper.c
+src/neuromass/models/kuramoto/_native/cpp_backend_wrapper.cpp
+src/neuromass/models/kuramoto/_native/cython_backend.c
 .pytest_cache/
 .ruff_cache/
 .coverage
@@ -9,4 +13,3 @@ dist/
 *.egg-info/
 .eggs/
 docs/_build/
-
