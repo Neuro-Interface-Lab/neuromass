@@ -1,0 +1,69 @@
+[build-system]
+requires = [
+    "setuptools>=69",
+    "wheel",
+    "Cython>=3.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuromass"
+version = "0.1.0"
+description = "Neuroscience-oriented neural mass and mean-field simulation toolkit."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Florian Kolbl" },
+    { name = "Yannick Bornat" },
+    { name = "Mehrdad Paryav" },
+    { name = "Salma Taki" },
+]
+keywords = [
+    "neuroscience",
+    "neural-mass",
+    "mean-field",
+    "kuramoto",
+    "dynamical-systems",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "pytest",
+    "ruff",
+]
+docs = [
+    "sphinx>=7",
+    "furo",
+]
+test = [
+    "pytest",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
