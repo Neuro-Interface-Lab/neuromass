@@ -1,4 +1,5 @@
 __pycache__/
+.DS_Store
 *.py[cod]
 *.so
 .pytest_cache/
@@ -9,4 +10,3 @@ dist/
 *.egg-info/
 .eggs/
 docs/_build/
-
