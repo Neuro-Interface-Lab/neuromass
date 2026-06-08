@@ -11,5 +11,5 @@ Contents
    :maxdepth: 2
 
    installation
+   dev_corner
    api
-
