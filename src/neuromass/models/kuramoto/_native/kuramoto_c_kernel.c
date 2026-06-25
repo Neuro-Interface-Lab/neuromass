@@ -1,6 +1,7 @@
 #include "kuramoto_c_kernel.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 void simulate_naive_kuramoto_c(
     const double* adjacency,
@@ -38,3 +39,103 @@ void simulate_naive_kuramoto_c(
         }
     }
 }
+void simu_para_complexe(
+    const double* omega,
+    const double* theta0,
+    double epsilon,
+    double dt,
+    int n_nodes,
+    int n_steps,
+    double* output
+){
+    int i;
+    int j;
+    int step;
+    int stride =n_steps + 1;
+   
+    for(i=0; i< n_nodes; ++i){
+        output[i*stride] = theta0[i];
+    }
+
+
+    for (step=0; step< n_steps; ++step){
+        double c=0.0;
+        double s=0.0;
+        double r;
+        double psi;
+
+    for (i=0 ; i< n_nodes; ++i){
+        c+= cos(output[i*stride + step]);
+        s+= sin(output[i*stride + step]);
+    }
+    c=c/n_nodes;
+    s=s/n_nodes;
+    r= sqrt(c*c + s*s);
+
+
+    psi= atan2(s,c);
+    for (j=0; j< n_nodes; ++j){
+        double theta_current = output[j*stride + step];
+        output[j*stride + step + 1] = theta_current + dt * (omega[j] + epsilon * r * sin(psi - theta_current)
+            );
+
+        }
+    }
+}
+
+void simu_sparse(
+    const double* edge_values,
+    const int* edge_rows,
+    const int* edge_cols,
+    const double* omega,
+    const double* theta0,
+    double epsilon,
+    double dt,
+    int n_nodes,
+    int n_steps,
+    int n_edges,
+    const int* row,
+    const int* col,
+    double* output
+) {
+    int i;
+    int j;
+    int e;
+    int step;
+    int stride;
+    double* coupling;
+    
+
+    stride = n_steps + 1;
+    coupling = malloc(n_nodes * sizeof(double));
+
+    if (coupling == NULL) {
+        return;
+    }
+
+    for (i = 0; i < n_nodes; ++i) {
+        output[i * stride] = theta0[i];
+    }
+
+    for (step = 0; step < n_steps; ++step) {
+        for (i = 0; i < n_nodes; ++i) {
+            coupling[i] = 0.0;
+        }
+        for (e = 0; e < n_edges; ++e) {
+            i = edge_rows[e];
+            j = edge_cols[e];
+            double weight = edge_values[e];
+            double theta_i = output[i * stride + step];
+            double theta_j = output[j * stride + step];
+            coupling[i] += weight * sin(theta_j - theta_i);
+        }
+        for (i = 0; i < n_nodes; ++i) {
+            output[i * stride + step + 1] = output[i * stride + step] + dt * (
+                omega[i] + (epsilon / n_nodes) * coupling[i]
+            );
+        }
+    }
+
+    free(coupling);
+}
+
