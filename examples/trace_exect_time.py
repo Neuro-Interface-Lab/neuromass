@@ -8,7 +8,7 @@ from collections import defaultdict
 from scipy.optimize import curve_fit
 
 
-def read_csv_data(filename="execution_times.csv"):
+def read_csv_data(filename="execution_times_parallelism.csv"):
     """Read CSV file without pandas."""
     
     if not os.path.isfile(filename):
@@ -45,7 +45,7 @@ def cout_funct(N, overhead, alpha1, alpha2,):
           
 
 
-def plot_from_csv(filename="execution_times.csv"):
+def plot_from_csv(filename="execution_times_parallelism.csv"):
     """Plot log-log scaling from CSV file."""
     
     result = read_csv_data(filename)

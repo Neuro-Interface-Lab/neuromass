@@ -43,7 +43,7 @@ def execution_time(model, theta0, T, dt, backend):
     elapsed = perf_counter() - start
     return elapsed
 
-def save_results_to_csv(n_nodes, results, filename="execution_times.csv"):
+def save_results_to_csv(n_nodes, results, filename="execution_times_parallelism.csv"):
     """Save the execution times to a CSV file."""
     file_exists = os.path.isfile(filename)
     header = ["N", "backend", "mean_time"]
@@ -55,7 +55,7 @@ def save_results_to_csv(n_nodes, results, filename="execution_times.csv"):
             writer.writerow([n_nodes, backend, elapsed])
 
 def main():
-    n_nodes =10000
+    n_nodes =500
     dt = 0.01
     T = 50.0
 
@@ -72,7 +72,7 @@ def main():
         except Exception as e:
             results[backend] = None
             print(f"{backend}:<10 : erreur - {e}")
-    save_results_to_csv(n_nodes, results,"execution_times.csv")
+    save_results_to_csv(n_nodes, results,"execution_times_parallelism.csv")
 
 if __name__ == "__main__":
     main()

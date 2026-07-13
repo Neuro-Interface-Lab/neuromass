@@ -1,0 +1,34 @@
+X
+^X
+Exit
+^X Exit 
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    // Définir le nombre de threads (optionnel)
+    // omp_set_num_threads(8);
+    
+    printf("=== TEST OPENMP ===\n\n");
+    
+    // 1. Vérifier le nombre de threads disponibles
+    int max_threads = omp_get_max_threads();
+    printf("Nombre maximum de threads : %d\n", max_threads);
+    
+    // 2. Créer une équipe de threads en parallèle
+    #pragma omp parallel
+    {
+        int id = omp_get_thread_num();
+        printf("Hello from thread %d\n", id);
+    }
+    
+    // 3. Paralléliser une boucle
+    printf("\n=== BOUCLE PARALLÈLE ===\n");
+    #pragma omp parallel for
+    for (int i = 0; i < 20; i++) {
+        int id = omp_get_thread_num();
+        printf("i = %d (thread %d)\n", i, id);
+    }
+    
+    return 0;
+}
