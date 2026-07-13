@@ -1,5 +1,9 @@
 """Kuramoto-family models."""
 
-from .model import NaiveKuramotoModel
+from .model import NaiveKuramotoModel, MeanFieldKuramotoModel, SparseKuramotoModel
 
-__all__ = ["NaiveKuramotoModel"]
+__all__ = [
+	"NaiveKuramotoModel",
+	"MeanFieldKuramotoModel",
+	"SparseKuramotoModel",
+]

@@ -6,7 +6,7 @@ cimport numpy as cnp
 from libc.math cimport sin, cos, atan2, sqrt
 
 cnp.import_array()
-
+from cython.parallel cimport prange
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -23,25 +23,28 @@ def simulate_naive_kuramoto(
     cdef int n_nodes = omega.shape[0]
     cdef int i, j, step
     cdef double coupling
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta = np.zeros(
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta_arr = np.zeros(
         (n_nodes, n_steps + 1),
         dtype=np.float64,
     )
+    cdef double[:, ::1] theta = theta_arr
+    cdef double[:, ::1] adj = adjacency
+    cdef double[::1] omega_v = omega
 
     for i in range(n_nodes):
         theta[i, 0] = theta0[i]
 
     for step in range(n_steps):
-        for i in range(n_nodes):
+        for i in prange(n_nodes, nogil= True):
             coupling = 0.0
             for j in range(n_nodes):
-                if adjacency[i, j] != 0.0:
-                    coupling += adjacency[i, j] * sin(theta[j, step] - theta[i, step])
+                if adj[i, j] != 0.0:
+                    coupling = coupling +adj[i, j] * sin(theta[j, step] - theta[i, step])
             theta[i, step + 1] = theta[i, step] + dt * (
-                omega[i] + (epsilon / n_nodes) * coupling
+                omega_v[i] + (epsilon / n_nodes) * coupling
             )
 
-    return theta
+    return theta_arr
 
 
 
@@ -60,10 +63,12 @@ def simu_para_complexe(
     cdef int n_nodes = omega.shape[0]
     cdef int i, j, step
     cdef double coupling, c, s, r, psi
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta = np.zeros(
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta_arr = np.zeros(
         (n_nodes, n_steps + 1),
         dtype=np.float64,
     )
+    cdef double[:, ::1] theta = theta_arr
+    cdef double[::1] omega_v = omega
 
     for i in range(n_nodes):
         theta[i, 0] = theta0[i]
@@ -80,11 +85,11 @@ def simu_para_complexe(
         r = sqrt(c * c + s * s)
         psi = atan2(s, c)
 
-        for i in range(n_nodes):
-            theta[i,step+1]= theta[i,step] + dt *(omega[i] + epsilon * r*sin(psi - theta[i,step]))
+        for i in prange(n_nodes, nogil= True):
+            theta[i,step+1]= theta[i,step] + dt *(omega_v[i] + epsilon * r*sin(psi - theta[i,step]))
             
 
-    return theta
+    return theta_arr
 
 
 
@@ -108,29 +113,34 @@ def simu_sparse(
     cdef int i, j, step
     cdef double coupling_i
     cdef int stride = n_steps + 1
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta = np.zeros(
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] theta_arr = np.zeros(
         (n_nodes, n_steps + 1),
         dtype=np.float64,
     )
+    cdef double[:, ::1] theta = theta_arr
+    cdef double[::1] omega_v = omega
+    cdef double[::1] edge_values_v = edge_values
+    cdef int[::1] edge_rows_v = edge_rows
+    cdef int[::1] edge_cols_v = edge_cols
 
     for i in range(n_nodes):
         theta[i, 0] = theta0[i]
-    for step in range(n_steps):
+    for step in prange(n_steps, nogil = True):
 
         for i in range(n_nodes):
             coupling_i = 0.0
 
             for e in range(n_edges):
-                if edge_rows[e] == i:
-                    j = edge_cols[e]
-                    weight = edge_values[e]
-                    coupling_i = weight * sin(theta[j,step]- theta[i, step])  
+                if edge_rows_v[e] == i:
+                    j = edge_cols_v[e]
+                    weight = edge_values_v[e]
+                    coupling_i = coupling_i +weight * sin(theta[j,step]- theta[i, step])  
 
       
-        theta[i,step+1]= theta[i,step] + dt *(omega[i] + (epsilon/n_nodes) * coupling_i)
+        theta[i,step+1]= theta[i,step] + dt *(omega_v[i] + (epsilon/n_nodes) * coupling_i)
             
 
-    return theta
+    return theta_arr
 
 
 

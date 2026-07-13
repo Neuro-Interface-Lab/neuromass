@@ -12,7 +12,7 @@ def test_python_backend_shape() -> None:
     model = NaiveKuramotoModel(
         n_nodes=n_nodes,
         omega=omega,
-        epsilon=0.5,
+        epsilon=3,
         adjacency=adjacency,
     )
 
