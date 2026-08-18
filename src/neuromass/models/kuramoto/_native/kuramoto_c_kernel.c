@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <cuda_runtime.h>
 
 // Déclaration de la fonction CUDA
@@ -9,14 +10,39 @@
 extern "C" {
 #endif
 void simulate_naive_kuramoto_cuda(
-    const double* adjacency,
-    const double* omega,
-    const double* theta0,
-    double epsilon,
-    double dt,
+    const float* adjacency,
+    const float* omega,
+    const float* theta0,
+    float epsilon,
+    float dt,
     int n_nodes,
     int n_steps,
-    double* output
+    float* output
+);
+void simu_para_complexe_cuda(
+    const float* omega,
+    const float* theta0,
+    float epsilon,
+    float dt,
+    int n_nodes,
+    int n_steps,
+    float* output
+);
+
+void simu_sparse_cuda(
+    const float* edge_values,
+    const int* edge_rows,
+    const int* edge_cols,
+    const float* omega,
+    const float* theta0,
+    float epsilon,
+    float dt,
+    int n_nodes,
+    int n_steps,
+    int n_edges,
+    const int* row,
+    const int* col,
+    float* output
 );
 #ifdef __cplusplus
 }
@@ -26,18 +52,18 @@ void simulate_naive_kuramoto_cuda(
 
 
 void simulate_naive_kuramoto_c(
-    const double* adjacency,
-    const double* omega,
-    const double* theta0,
-    double epsilon,
-    double dt,
+    const float* adjacency,
+    const float* omega,
+    const float* theta0,
+    float epsilon,
+    float dt,
     int n_nodes,
     int n_steps,
-    double* output
+    float* output
 ) {
     int i, j, step;
     int stride = n_steps + 1;
-    double coupling, weight;
+    float coupling, weight;
     printf(" simulate_naive_kuramoto_c appelée avec N = %d\n", n_nodes);
 
 
@@ -52,111 +78,121 @@ void simulate_naive_kuramoto_c(
     );}
 
 
-   
-void simu_para_complexe(
-    const double *omega,
-    const double *theta0,
-    double epsilon,
-    double dt,
-    int n_nodes,
-    int n_steps,
-    double *output)
-{
-    int i;
-    int j;
-    int step;
-    int stride = n_steps + 1;
-
-#pragma omp parallel for
-    for (i = 0; i < n_nodes; ++i)
-    {
-        output[i * stride] = theta0[i];
-    }
-
-    for (step = 0; step < n_steps; ++step)
-    {
-        double c = 0.0;
-        double s = 0.0;
-        double r;
-        double psi;
-        double theta_current;
-#pragma omp parallel for reduction(+ : c, s)
-        for (i = 0; i < n_nodes; ++i)
-        {
-            c += cos(output[i * stride + step]);
-            s += sin(output[i * stride + step]);
-        }
-        c = c / n_nodes;
-        s = s / n_nodes;
-        r = sqrt(c * c + s * s);
-
-        psi = atan2(s, c);
-#pragma omp parallel for private(theta_current)
-        for (j = 0; j < n_nodes; ++j)
-        {
-            double theta_current = output[j * stride + step];
-            output[j * stride + step + 1] = theta_current + dt * (omega[j] + epsilon * r * sin(psi - theta_current));
-        }
-    }
-}
-
 void simu_sparse(
-    const double *edge_values,
+    const float *edge_values,
     const int *edge_rows,
     const int *edge_cols,
-    const double *omega,
-    const double *theta0,
-    double epsilon,
-    double dt,
+    const float *omega,
+    const float *theta0,
+    float epsilon,
+    float dt,
     int n_nodes,
     int n_steps,
     int n_edges,
     const int *row,
     const int *col,
-    double *output)
+    float *output)
 {
-    int i;
-    int j;
-    int e;
-    int step;
+    int i, j, e, step;
     int stride;
-    double *coupling;
+    float *coupling;
 
     stride = n_steps + 1;
-    coupling = malloc(n_nodes * sizeof(double));
+    coupling = malloc(n_nodes * sizeof(float));
 
-    if (coupling == NULL)
-    {
+    if (coupling == NULL) {
         return;
     }
-#pragma omp parallel for
-    for (i = 0; i < n_nodes; ++i)
-    {
+
+    #pragma omp parallel for
+    for (i = 0; i < n_nodes; ++i) {
         output[i * stride] = theta0[i];
     }
 
-    for (step = 0; step < n_steps; ++step)
-    {
-#pragma omp parallel for
-        for (i = 0; i < n_nodes; ++i)
-        {
-            coupling[i] = 0.0;
+    for (step = 0; step < n_steps; ++step) {
+        #pragma omp parallel for
+        for (i = 0; i < n_nodes; ++i) {
+            coupling[i] = 0.0f;
         }
-        for (e = 0; e < n_edges; ++e)
-        {
+        for (e = 0; e < n_edges; ++e) {
             i = edge_rows[e];
             j = edge_cols[e];
-            double weight = edge_values[e];
-            double theta_i = output[i * stride + step];
-            double theta_j = output[j * stride + step];
-            coupling[i] += weight * sin(theta_j - theta_i);
+            float weight = edge_values[e];
+            float theta_i = output[i * stride + step];
+            float theta_j = output[j * stride + step];
+            coupling[i] += weight * sinf(theta_j - theta_i);
         }
-#pragma omp parallel for
-        for (i = 0; i < n_nodes; ++i)
-        {
-            output[i * stride + step + 1] = output[i * stride + step] + dt * (omega[i] + (epsilon / n_nodes) * coupling[i]);
+        #pragma omp parallel for
+        for (i = 0; i < n_nodes; ++i) {
+            output[i * stride + step + 1] = output[i * stride + step] + dt * (
+                omega[i] + (epsilon / n_nodes) * coupling[i]
+            );
         }
     }
 
     free(coupling);
+}
+void simu_para_complexe(
+    const float *omega,
+    const float *theta0,
+    float epsilon,
+    float dt,
+    int n_nodes,
+    int n_steps,
+    float *output)
+{
+    int i, step;
+    int stride = n_steps + 1;
+
+    // Copie initiale (CPU) 
+    #pragma omp parallel for
+    for (i = 0; i < n_nodes; ++i) {
+        output[i * stride] = theta0[i];
+    }
+
+    // Vérifier si on doit utiliser le GPU 
+    int use_gpu = 0;
+    if (n_nodes > 1000) {
+        int cuda_available = 0;
+        cudaError_t err = cudaGetDeviceCount(&cuda_available);
+        if (err == cudaSuccess && cuda_available > 0) {
+            use_gpu = 1;
+            printf("🚀 [MEAN-FIELD] Utilisation du GPU pour N = %d\n", n_nodes);
+        } else {
+            printf("ℹ️ [MEAN-FIELD] CUDA non disponible, utilisation CPU\n");
+        }
+    }
+
+    // --- Si GPU disponible et N grand → utiliser CUDA ---
+    if (use_gpu) {
+        simu_para_complexe_cuda(
+            omega, theta0, epsilon, dt, n_nodes, n_steps, output
+        );
+        return;
+    }
+
+    // --- SINON : Version CPU (OpenMP) ---
+    for (step = 0; step < n_steps; ++step) {
+        float c = 0.0f;
+        float s = 0.0f;
+        float r, psi;
+
+        #pragma omp parallel for reduction(+ : c, s)
+        for (i = 0; i < n_nodes; ++i) {
+            c += cosf(output[i * stride + step]);
+            s += sinf(output[i * stride + step]);
+        }
+        c = c / n_nodes;
+        s = s / n_nodes;
+        r = sqrtf(c * c + s * s);
+        psi = atan2f(s, c);
+
+        #pragma omp parallel for
+        for (int j = 0; j < n_nodes; ++j) {
+            float theta_current = output[j * stride + step];
+            output[j * stride + step + 1] = theta_current + dt * (
+                omega[j] + epsilon * r * sinf(psi - theta_current)
+            );
+        }
+    }
 }
