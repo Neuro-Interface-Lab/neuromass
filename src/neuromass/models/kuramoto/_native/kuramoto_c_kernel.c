@@ -157,9 +157,9 @@ void simu_para_complexe(
         cudaError_t err = cudaGetDeviceCount(&cuda_available);
         if (err == cudaSuccess && cuda_available > 0) {
             use_gpu = 1;
-            printf("🚀 [MEAN-FIELD] Utilisation du GPU pour N = %d\n", n_nodes);
+            printf(" [MEAN-FIELD] Utilisation du GPU pour N = %d\n", n_nodes);
         } else {
-            printf("ℹ️ [MEAN-FIELD] CUDA non disponible, utilisation CPU\n");
+            printf(" [MEAN-FIELD] CUDA non disponible, utilisation CPU\n");
         }
     }
 

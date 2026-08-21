@@ -98,7 +98,7 @@ void simu_sparse_cuda(
     const int* col,
     float* output
 ) {
-    printf("📍 [CUDA WRAPPER] simu_sparse_cuda appelée\n");
+    printf(" simu_sparse_cuda appelée\n");
     printf("   N=%d, steps=%d, edges=%d\n", n_nodes, n_steps, n_edges);
     
     int threadsPerBlock = 256;
@@ -118,7 +118,10 @@ void simu_sparse_cuda(
         printf("[CUDA WRAPPER] Noyau sparse terminé avec succès\n");
     }
 }
-void simu_para_complexe_cuda(
+// ============================================================
+// WRAPPER MEAN-FIELD AVEC extern "C"
+// ============================================================
+extern "C" void simu_para_complexe_cuda(
     const float* omega,
     const float* theta0,
     float epsilon,
@@ -127,7 +130,7 @@ void simu_para_complexe_cuda(
     int n_steps,
     float* output
 ) {
-    printf("[CUDA WRAPPER] simu_para_complexe_cuda appelée\n");
+    printf("  simu_para_complexe_cuda appelée\n");
     printf("   N=%d, steps=%d\n", n_nodes, n_steps);
     
     int threadsPerBlock = 256;
