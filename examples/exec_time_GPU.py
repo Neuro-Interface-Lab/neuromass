@@ -1,21 +1,22 @@
-"""Test de performance : backend C avec/sans GPU - Version Mean-Field (paramètre complexe)."""
+"""Test de performance : backend C avec/sans GPU - Cas Naive (dense)."""
 
 import csv
 import os
 import time
 import numpy as np
-from neuromass.models.kuramoto import MeanFieldKuramotoModel  
+from neuromass.models.kuramoto import NaiveKuramotoModel
 from neuromass.utils import LorentzianFrequencyGenerator
 
-results_csv = "execution_times_meanfield_stats.csv"  
+results_csv = "execution_times_GPU_dense_stats.csv"
 
 
-def build_meanfield_problem(n_nodes):
-    """
-    Construire un problème Kuramoto avec couplage mean-field (paramètre complexe).
-    Pas de matrice d'adjacence, complexité O(N).
-    """
+def build_problem(n_nodes, density=0.1):
+    """Construire un problème Kuramoto dense."""
     rng = np.random.default_rng(42)
+    
+    adjacency = rng.random((n_nodes, n_nodes))
+    adjacency *= rng.random((n_nodes, n_nodes)) < density
+    np.fill_diagonal(adjacency, 0.0)
     
     frequency_generator = LorentzianFrequencyGenerator(
         x0=0.0,
@@ -26,11 +27,11 @@ def build_meanfield_problem(n_nodes):
     omega = frequency_generator.sample(n_nodes, truncated=True, cutoff=5.0)
     theta0 = rng.uniform(-np.pi, np.pi, size=n_nodes)
     
-
-    model = MeanFieldKuramotoModel(
+    model = NaiveKuramotoModel(
         n_nodes=n_nodes,
         omega=omega,
         epsilon=3.8,
+        adjacency=adjacency,
     )
     return model, theta0
 
@@ -51,7 +52,7 @@ def save_results_to_csv(results, filename=results_csv):
         writer.writerow(header)
         for row in results:
             writer.writerow(row)
-    print(f"\nRésultats sauvegardés dans : {filename}")
+    print(f"\n Résultats sauvegardés dans : {filename}")
 
 
 def main():
@@ -61,25 +62,22 @@ def main():
     n_steps = int(T / dt)
     n_measures = 4
 
+    # Différentes tailles à tester 
+    N_values = [100, 200, 250, 255, 260,  500, 1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000]
 
-    N_values = [1000, 2000, 5000, 10000, 20000, 50000, 
-                100000, 200000, 500000, 1000000, 2000000, 5000000]  # Valeurs de N à tester
-
-    print("=" * 60)
-    print("TEST DE PERFORMANCE : MEAN-FIELD (PARAMÈTRE COMPLEXE)")
-    print("=" * 60)
+   
+    print("Test de performance : Cac naive (DENSE)")
+   
     print(f"dt = {dt}s, T = {T}s, steps = {n_steps}")
-    print(f"Nombre de mesures par N = {n_measures}")
-    print(f"Complexité théorique : O(N)\n")
+    print(f"Nombre de mesures par N = {n_measures}\n")
 
     results = []
 
     for N in N_values:
-        print(f"\nN = {N}")
+        print(f"\n N = {N}")
         print("-" * 40)
 
-        # Construire le modèle mean-field
-        model, theta0 = build_meanfield_problem(N)
+        model, theta0 = build_problem(N)
         
         times = []
 
@@ -100,11 +98,11 @@ def main():
             min_time = np.min(valid_times)
             max_time = np.max(valid_times)
             
-            print(f"\n  Statistiques :")
-            print(f"    Moyenne  : {mean_time:.6f}s")
-            print(f"    Écart-type : {std_time:.6f}s")
-            print(f"    Min      : {min_time:.6f}s")
-            print(f"    Max      : {max_time:.6f}s")
+            print(f"\n Statistiques :")
+            print(f"   Moyenne  : {mean_time:.6f}s")
+            print(f"   Écart-type : {std_time:.6f}s")
+            print(f"   Min      : {min_time:.6f}s")
+            print(f"   Max      : {max_time:.6f}s")
             
             results.append([N, mean_time, std_time, min_time, max_time, len(valid_times)])
         else:
@@ -114,10 +112,10 @@ def main():
     # Sauvegarder les résultats
     save_results_to_csv(results)
 
-    # Résumé
  
-    print("RÉSUMÉ DES PERFORMANCES (MEAN-FIELD)")
- 
+  
+    print("Rsumé de performance : Cas naive)")
+
     print(f"{'N':<12} {'Moyenne (s)':<16} {'Écart-type':<16} {'Min (s)':<14} {'Max (s)':<14} {'Mesures':<8}")
     print("-" * 85)
     for N, mean_t, std_t, min_t, max_t, n_meas in results:
@@ -126,12 +124,9 @@ def main():
         else:
             print(f"{N:<12} {'---':<16} {'---':<16} {'---':<14} {'---':<14} {n_meas:<8}")
 
-
-    print("   - Modèle : Mean-Field (paramètre d'ordre global)")
-    print("   - Complexité théorique : O(N)")
-    
-  
-
+    print("Test terminé")
+    print("   - Modèle : Naive (dense)")
+    print("   - Complexité théorique : O(N²)")
 
 if __name__ == "__main__":
     main()

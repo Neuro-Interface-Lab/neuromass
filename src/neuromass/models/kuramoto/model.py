@@ -9,8 +9,8 @@ from numpy.typing import ArrayLike, NDArray
 
 from ..base import BaseModel
 
-FloatVector = NDArray[np.float64]
-FloatMatrix = NDArray[np.float64]
+FloatVector = NDArray[np.float32]
+FloatMatrix = NDArray[np.float32]
 
 
 _BACKEND_MODULES = {
@@ -29,7 +29,7 @@ def _python_kernel_naive(
 ) -> FloatMatrix:
     """Reference Python implementation (dense network)."""
     n_nodes = omega.shape[0]
-    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float64)
+    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float32)
     theta[:, 0] = theta0
 
     for step in range(n_steps):
@@ -54,7 +54,7 @@ def _python_kernel_order_parameter(
 ) -> FloatMatrix:
     """Reference Python implementation (mean-field global coupling)."""
     n_nodes = omega.shape[0]
-    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float64)
+    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float32)
     theta[:, 0] = theta0
 
     for step in range(n_steps):
@@ -81,7 +81,7 @@ def _python_kernel_sparse(
     """Reference Python implementation (sparse COO)."""
     n_nodes = omega.shape[0]
     n_edges = edge_values.shape[0]
-    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float64)
+    theta = np.zeros((n_nodes, n_steps + 1), dtype=np.float32)
     theta[:, 0] = theta0
 
     for step in range(n_steps):
@@ -97,9 +97,9 @@ def _python_kernel_sparse(
     return theta
 
 
-# ============================================================
+
 # Chargeurs de backends
-# ============================================================
+
 
 def _load_backend_naive(backend: str) -> Callable:
     if backend == "python":
@@ -181,8 +181,8 @@ class NaiveKuramotoModel(BaseModel):
     name: str = field(default="kuramoto-naive", init=False)
 
     def __post_init__(self) -> None:
-        self.omega = np.ascontiguousarray(self.omega, dtype=np.float64)
-        self.adjacency = np.ascontiguousarray(self.adjacency, dtype=np.float64)
+        self.omega = np.ascontiguousarray(self.omega, dtype=np.float32)
+        self.adjacency = np.ascontiguousarray(self.adjacency, dtype=np.float32)
         if self.n_nodes <= 0:
             raise ValueError("`n_nodes` must be strictly positive.")
         if self.omega.shape != (self.n_nodes,):
@@ -202,13 +202,13 @@ class NaiveKuramotoModel(BaseModel):
         return available
 
     def solve(self, theta0: ArrayLike, T: float, dt: float, backend: str = "python") -> tuple[FloatVector, FloatMatrix]:
-        theta0_array = np.ascontiguousarray(theta0, dtype=np.float64)
+        theta0_array = np.ascontiguousarray(theta0, dtype=np.float32)
         if theta0_array.shape != (self.n_nodes,):
             raise ValueError(f"`theta0` must be of shape ({self.n_nodes},).")
         n_steps = int(round(T / dt))
         kernel = _load_backend_naive(backend)
         theta = kernel(self.adjacency, self.omega, theta0_array, float(self.epsilon), float(dt), n_steps)
-        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float64)
+        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float32)
         return time, theta
 
 
@@ -223,7 +223,7 @@ class MeanFieldKuramotoModel(BaseModel):
     name: str = field(default="kuramoto-meanfield", init=False)
 
     def __post_init__(self) -> None:
-        self.omega = np.ascontiguousarray(self.omega, dtype=np.float64)
+        self.omega = np.ascontiguousarray(self.omega, dtype=np.float32)
         if self.n_nodes <= 0:
             raise ValueError("`n_nodes` must be strictly positive.")
         if self.omega.shape != (self.n_nodes,):
@@ -241,13 +241,13 @@ class MeanFieldKuramotoModel(BaseModel):
         return available
 
     def solve(self, theta0: ArrayLike, T: float, dt: float, backend: str = "python") -> tuple[FloatVector, FloatMatrix]:
-        theta0_array = np.ascontiguousarray(theta0, dtype=np.float64)
+        theta0_array = np.ascontiguousarray(theta0, dtype=np.float32)
         if theta0_array.shape != (self.n_nodes,):
             raise ValueError(f"`theta0` must be of shape ({self.n_nodes},).")
         n_steps = int(round(T / dt))
         kernel = _load_backend_order_parameter(backend)
         theta = kernel(self.omega, theta0_array, float(self.epsilon), float(dt), n_steps)
-        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float64)
+        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float32)
         return time, theta
 
 
@@ -268,10 +268,10 @@ class SparseKuramotoModel(BaseModel):
     col: NDArray = field(default=None, init=False)
 
     def __post_init__(self) -> None:
-        self.edge_values = np.ascontiguousarray(self.edge_values, dtype=np.float64)
+        self.edge_values = np.ascontiguousarray(self.edge_values, dtype=np.float32)
         self.edge_rows = np.ascontiguousarray(self.edge_rows, dtype=np.int32)
         self.edge_cols = np.ascontiguousarray(self.edge_cols, dtype=np.int32)
-        self.omega = np.ascontiguousarray(self.omega, dtype=np.float64)
+        self.omega = np.ascontiguousarray(self.omega, dtype=np.float32)
         self.row = self.edge_rows.copy()
         self.col = self.edge_cols.copy()
         
@@ -292,7 +292,7 @@ class SparseKuramotoModel(BaseModel):
         return available
 
     def solve(self, theta0: ArrayLike, T: float, dt: float, backend: str = "python") -> tuple[FloatVector, FloatMatrix]:
-        theta0_array = np.ascontiguousarray(theta0, dtype=np.float64)
+        theta0_array = np.ascontiguousarray(theta0, dtype=np.float32)
         if theta0_array.shape != (self.n_nodes,):
             raise ValueError(f"`theta0` must be of shape ({self.n_nodes},).")
         n_steps = int(round(T / dt))
@@ -302,5 +302,5 @@ class SparseKuramotoModel(BaseModel):
             self.omega, theta0_array,
             float(self.epsilon), float(dt), n_steps
         )
-        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float64)
+        time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float32)
         return time, theta

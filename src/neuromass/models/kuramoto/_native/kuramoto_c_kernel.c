@@ -7,7 +7,7 @@
 
 // Déclaration de la fonction CUDA
 #ifdef __cplusplus
-extern "C" {
+extern "C" {//Il permet de dire au compilateur C++ de ne pas modifier les noms des fonctions (name mangling), afin que le code C puisse les appeler.
 #endif
 void simulate_naive_kuramoto_cuda(
     const float* adjacency,
@@ -72,10 +72,51 @@ void simulate_naive_kuramoto_c(
     for (i = 0; i < n_nodes; ++i) {
         output[i * stride] = theta0[i];
     }
-    simulate_naive_kuramoto_cuda(
-        adjacency, omega, theta0, epsilon, dt,
-        n_nodes, n_steps, output
-    );}
+    int use_gpu = 0;
+    if (n_nodes > 1000) {  // ← SEUIL
+        int cuda_available = 0;
+        cudaError_t err = cudaGetDeviceCount(&cuda_available);
+        if (err == cudaSuccess && cuda_available > 0) {
+            use_gpu = 1;
+            printf(" [DENSE] Utilisation du GPU pour N = %d\n", n_nodes);
+        }else {
+            printf(" [DENSE] CUDA non disponible, utilisation CPU\n");
+            
+        }
+    } else {
+        printf("[DENSE] N=%d <= 1000, utilisation CPU (overhead GPU trop grand)\n", n_nodes);
+    }
+    
+
+    if (use_gpu) {
+        simulate_naive_kuramoto_cuda(
+            adjacency, omega, theta0, epsilon, dt,
+            n_nodes, n_steps, output
+        );
+        return;
+    }
+    printf("[DENSE] Version CPU avec OpenMP pour N = %d\n", n_nodes);
+    
+    for (step = 0; step < n_steps; ++step) {
+        // Parallélisation sur les oscillateurs
+        #pragma omp parallel for private(j, coupling, weight)
+        for (i = 0; i < n_nodes; ++i) {
+            coupling = 0.0f;
+            float theta_i = output[i * stride + step];
+            
+            for (j = 0; j < n_nodes; ++j) {
+                weight = adjacency[i * n_nodes + j];
+                if (weight != 0.0f) {
+                    coupling += weight * sinf(output[j * stride + step] - theta_i);
+                }
+            }
+            
+            output[i * stride + step + 1] = theta_i + dt * (
+                omega[i] + (epsilon / n_nodes) * coupling
+            );
+        }
+    }
+}
 
 
 void simu_sparse(
