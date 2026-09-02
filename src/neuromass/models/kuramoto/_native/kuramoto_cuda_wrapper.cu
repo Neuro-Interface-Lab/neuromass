@@ -63,6 +63,19 @@ void simulate_naive_kuramoto_cuda(
     int n_steps,
     float* output
 ) {
+
+    float *d_adjacency, *d_omega, *d_theta0, *d_output;
+    
+    cudaMalloc(&d_adjacency, n_nodes * n_nodes * sizeof(float));
+    cudaMalloc(&d_omega, n_nodes * sizeof(float));
+    cudaMalloc(&d_theta0, n_nodes * sizeof(float));
+    cudaMalloc(&d_output, n_nodes * (n_steps + 1) * sizeof(float));
+
+    // Copies CPU → GPU
+    cudaMemcpy(d_adjacency, adjacency, n_nodes * n_nodes * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_omega, omega, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_theta0, theta0, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
+
     printf("[CUDA WRAPPER] simulate_naive_kuramoto_cuda appelée\n");
     printf("   N=%d, steps=%d\n", n_nodes, n_steps);
     
@@ -72,15 +85,20 @@ void simulate_naive_kuramoto_cuda(
     printf("   Lancement : %d blocs de %d threads\n", blocksPerGrid, threadsPerBlock);
     
     kernel_naive_kuramoto_cuda<<<blocksPerGrid, threadsPerBlock>>>(
-        adjacency, omega, theta0, epsilon, dt, n_nodes, n_steps, output
+        d_adjacency, d_omega, d_theta0, epsilon, dt, n_nodes, n_steps, d_output
     );
     
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        printf("[CUDA ERROR] %s\n", cudaGetErrorString(err));
-    } else {
-        printf("[CUDA WRAPPER] Noyau terminé avec succès\n");
-    }
+    cudaDeviceSynchronize();
+    
+    // Copie GPU → CPU
+    cudaMemcpy(output, d_output, n_nodes * (n_steps + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+    
+    // Libération
+    cudaFree(d_adjacency);
+    cudaFree(d_omega);
+    cudaFree(d_theta0);
+    cudaFree(d_output);
+    printf("CUDA WRAPPER : Noyau terminé avec succès\n");
 }
 
 void simu_sparse_cuda(
@@ -98,29 +116,58 @@ void simu_sparse_cuda(
     const int* col,
     float* output
 ) {
+
+    float *d_edge_values, *d_omega, *d_theta0, *d_output;
+    int *d_edge_rows, *d_edge_cols;
+    
+    cudaMalloc(&d_edge_values, n_edges * sizeof(float));
+    cudaMalloc(&d_edge_rows, n_edges * sizeof(int));
+    cudaMalloc(&d_edge_cols, n_edges * sizeof(int));
+    cudaMalloc(&d_omega, n_nodes * sizeof(float));
+    cudaMalloc(&d_theta0, n_nodes * sizeof(float));
+    cudaMalloc(&d_output, n_nodes * (n_steps + 1) * sizeof(float));
+
     printf(" simu_sparse_cuda appelée\n");
     printf("   N=%d, steps=%d, edges=%d\n", n_nodes, n_steps, n_edges);
+
+    // Copies CPU → GPU
+    cudaMemcpy(d_edge_values, edge_values, n_edges * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_edge_rows, edge_rows, n_edges * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_edge_cols, edge_cols, n_edges * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_omega, omega, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_theta0, theta0, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
     
     int threadsPerBlock = 256;
     int blocksPerGrid = (n_nodes + threadsPerBlock - 1) / threadsPerBlock;
     
     printf("   Lancement : %d blocs de %d threads\n", blocksPerGrid, threadsPerBlock);
+    int *d_row, *d_col;
+    cudaMalloc(&d_row, (n_nodes + 1) * sizeof(int));
+    cudaMalloc(&d_col, n_edges * sizeof(int));
+    cudaMemcpy(d_row, row, (n_nodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_col, col, n_edges * sizeof(int), cudaMemcpyHostToDevice);
     
     kernel_sparse_kuramoto_cuda<<<blocksPerGrid, threadsPerBlock>>>(
-        edge_values, edge_rows, edge_cols, omega, theta0, epsilon, dt,
-        n_nodes, n_steps, n_edges, row, col, output
+        d_edge_values, d_edge_rows, d_edge_cols, d_omega, d_theta0, epsilon, dt,n_nodes, n_steps, n_edges, d_row, d_col, d_output
+
     );
     
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        printf("[CUDA ERROR] %s\n", cudaGetErrorString(err));
-    } else {
-        printf("[CUDA WRAPPER] Noyau sparse terminé avec succès\n");
-    }
+    cudaDeviceSynchronize();
+    
+    // Copie GPU → CPU
+    cudaMemcpy(output, d_output, n_nodes * (n_steps + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+    
+    // Libération
+    cudaFree(d_edge_values);
+    cudaFree(d_edge_rows);
+    cudaFree(d_edge_cols);
+    cudaFree(d_omega);
+    cudaFree(d_theta0);
+    cudaFree(d_output);
 }
-// ============================================================
+
 // WRAPPER MEAN-FIELD AVEC extern "C"
-// ============================================================
+
 extern "C" void simu_para_complexe_cuda(
     const float* omega,
     const float* theta0,
@@ -130,45 +177,54 @@ extern "C" void simu_para_complexe_cuda(
     int n_steps,
     float* output
 ) {
-    printf("  simu_para_complexe_cuda appelée\n");
-    printf("   N=%d, steps=%d\n", n_nodes, n_steps);
-    
-    int threadsPerBlock = 256;
-    int blocksPerGrid = (n_nodes + threadsPerBlock - 1) / threadsPerBlock;
+
+    float *d_omega, *d_theta0, *d_output, *d_S, *d_C;
     int stride = n_steps + 1;
     
-    // Allouer S et C sur GPU
-    float *d_S, *d_C;
+    cudaMalloc(&d_omega, n_nodes * sizeof(float));
+    cudaMalloc(&d_theta0, n_nodes * sizeof(float));
+    cudaMalloc(&d_output, n_nodes * stride * sizeof(float));  
     cudaMalloc(&d_S, sizeof(float));
     cudaMalloc(&d_C, sizeof(float));
-    
-    // Copie initiale des phases
+
+    printf("  simu_para_complexe_cuda appelée\n");
+    printf("   N=%d, steps=%d\n", n_nodes, n_steps);
+
+    cudaMemcpy(d_omega, omega, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_theta0, theta0, n_nodes * sizeof(float), cudaMemcpyHostToDevice);
     for (int i = 0; i < n_nodes; i++) {
-        output[i * stride] = theta0[i];
+        cudaMemcpy(d_output + i * stride, d_theta0 + i, sizeof(float), cudaMemcpyDeviceToDevice);
     }
+
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (n_nodes + threadsPerBlock - 1) / threadsPerBlock;
     
-    // Boucle sur les pas de temps
+    
     for (int step = 0; step < n_steps; step++) {
-        // Réinitialiser S et C à 0
         cudaMemset(d_S, 0, sizeof(float));
         cudaMemset(d_C, 0, sizeof(float));
         
-        // Calculer S et C sur GPU
         kernel_meanfield_sums<<<blocksPerGrid, threadsPerBlock>>>(
-            output, d_S, d_C, n_nodes, step, stride
-        );
+            d_output, d_S, d_C, n_nodes, step, stride );
         
-        // Récupérer S et C sur CPU
         float S, C;
         cudaMemcpy(&S, d_S, sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(&C, d_C, sizeof(float), cudaMemcpyDeviceToHost);
         
-        // Mettre à jour les phases
         kernel_meanfield_update<<<blocksPerGrid, threadsPerBlock>>>(
-            omega, epsilon, dt, n_nodes, n_steps, output, S, C, step
+            d_omega, epsilon, dt, n_nodes, n_steps, d_output, S, C, step
         );
     }
+    cudaDeviceSynchronize();
     
+    // Copie GPU → CPU
+    cudaMemcpy(output, d_output, n_nodes * (n_steps + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+    
+    // Libération
+    cudaFree(d_omega);
+    cudaFree(d_theta0);
+    cudaFree(d_output);
     cudaFree(d_S);
     cudaFree(d_C);
     

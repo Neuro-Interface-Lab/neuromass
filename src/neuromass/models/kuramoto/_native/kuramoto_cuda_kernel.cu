@@ -25,7 +25,7 @@ __global__ void kernel_naive_kuramoto_cuda(
         for (int j = 0; j < n_nodes; j++) {
             float weight = adjacency[i * n_nodes + j];
             if (weight != 0.0) {
-                coupling += weight * sin(output[j * stride + step] - theta_i);
+                coupling += weight * sinf(output[j * stride + step] - theta_i);
             }
         }
         
@@ -70,21 +70,7 @@ __global__ void kernel_sparse_kuramoto_cuda(
 }
 // NOYAU parametre complexe
 
-__global__ void kernel_meanfield_kuramoto_cuda(
-    const float* omega,
-    const float* theta0,
-    float epsilon,
-    float dt,
-    int n_nodes,
-    int n_steps,
-    float* output
-) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i >= n_nodes) return;
-        
-        int stride = n_steps + 1;
-        output[i * stride] = theta0[i];
-}
+
 
 // NOYAU MEAN-FIELD - S ET C SUR GPU 
 __global__ void kernel_meanfield_sums(

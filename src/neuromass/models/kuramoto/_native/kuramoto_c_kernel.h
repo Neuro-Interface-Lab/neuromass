@@ -11,7 +11,7 @@ void simulate_naive_kuramoto_c(
     int n_steps,
     float* output
 );
-void simu_para_complexe(
+/*void simu_para_complexe(
     const float* omega,
     const float* theta0,
     float epsilon,
@@ -36,6 +36,6 @@ void simu_sparse(
     const int*col,
     float* output
 );
-
+*/
 
 #endif
