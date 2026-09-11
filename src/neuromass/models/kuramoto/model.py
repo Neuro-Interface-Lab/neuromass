@@ -107,7 +107,10 @@ def _load_backend_naive(backend: str) -> Callable:
     if backend not in _BACKEND_MODULES:
         raise ValueError(f"Unknown backend '{backend}'.")
     module = import_module(_BACKEND_MODULES[backend])
-    return module.simulate_naive_kuramoto
+    if backend == "c":
+        return module.simulate_naive_kuramoto_gpu  
+    else:
+        return module.simulate_naive_kuramoto_cpu
 
 
 def _load_backend_order_parameter(backend: str) -> Callable:
@@ -129,6 +132,7 @@ def _load_backend_sparse(backend: str) -> Callable:
         raise ValueError(f"Unknown backend '{backend}'.")
     module = import_module(_BACKEND_MODULES[backend])
 
+
     def _sparse_wrapper(
         edge_values,
         edge_rows,
@@ -138,9 +142,10 @@ def _load_backend_sparse(backend: str) -> Callable:
         epsilon,
         dt,
         n_steps,
+        n_edges,
     ):
         if backend == "cython":
-            return module.simu_sparse(
+            return module.simu_sparse_cpu(
                 omega,
                 theta0,
                 edge_values,
@@ -151,22 +156,40 @@ def _load_backend_sparse(backend: str) -> Callable:
                 n_steps,
             )
 
-        n_edges = int(edge_values.shape[0])
-        return module.simu_sparse(
-            edge_values,
-            edge_rows,
-            edge_cols,
-            omega,
-            theta0,
-            epsilon,
-            dt,
-            n_steps,
-            n_edges,
-            edge_rows,
-            edge_cols,
-        )
+        
+        elif backend == "c" or backend == "cpp":
+            
+            return module.simu_sparse_gpu(
+                edge_values,
+                edge_rows,
+                edge_cols,
+                omega,
+                theta0,
+                epsilon,
+                dt,
+                n_steps,
+                n_edges,
+                edge_rows,
+                edge_cols,
+            )
+        else:
+            return module.simu_sparse_cpu(
+                edge_values,
+                edge_rows,
+                edge_cols,
+                omega,
+                theta0,
+                epsilon,
+                dt,
+                n_steps,
+                n_edges,
+                edge_rows,
+                edge_cols,
+            )
 
     return _sparse_wrapper
+
+  
 
 
 
@@ -300,7 +323,7 @@ class SparseKuramotoModel(BaseModel):
         theta = kernel(
             self.edge_values, self.edge_rows, self.edge_cols,
             self.omega, theta0_array,
-            float(self.epsilon), float(dt), n_steps
+            float(self.epsilon), float(dt), n_steps, self.n_edges
         )
         time = np.linspace(0.0, n_steps * dt, n_steps + 1, dtype=np.float32)
         return time, theta

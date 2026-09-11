@@ -1,0 +1,3 @@
+operation,nombre_transferts,temps_total_ns,temps_total_ms,temps_pourcent,taille_totale_MB,taille_totale_GB,taille_pourcent,taille_moyenne_MB,taille_max_MB
+Host-to-Device,84,532540032,532.540,99.9,48423.408,47.288,99.8,576.469,6400.000
+Device-to-Host,28,577056,0.577,0.1,86.904,0.085,0.2,3.104,8.160

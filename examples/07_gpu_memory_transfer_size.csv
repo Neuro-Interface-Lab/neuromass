@@ -1,0 +1,10 @@
+
+NOTICE: Existing SQLite export found: /tmp/nsys-report-cc6c.sqlite
+        It is assumed file was previously exported from: /tmp/nsys-report-cc6c.nsys-rep
+        Consider using --force-export=true if needed.
+
+Processing [/tmp/nsys-report-cc6c.sqlite] with [/opt/nvidia/nsight-systems/2025.6.3/host-linux-armv8/reports/cuda_gpu_mem_size_sum.py]... 
+Total (MB),Count,Avg (MB),Med (MB),Min (MB),Max (MB),StdDev (MB),Operation
+48423.408,84,576.469,0.120,0.002,6400.000,1547.191,[CUDA memcpy Host-to-Device]
+86.904,28,3.104,2.040,0.102,8.160,2.944,[CUDA memcpy Device-to-Host]
+

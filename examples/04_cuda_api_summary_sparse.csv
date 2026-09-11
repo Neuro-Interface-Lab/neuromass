@@ -1,0 +1,10 @@
+interaction,nombre_appels,temps_total_ns,temps_total_ms,temps_moyen_ms
+cudaMalloc,240,146541112,146.541,0.611
+cudaDeviceSynchronize,30,86124393,86.124,2.871
+cudaMemcpy,240,59502549,59.503,0.248
+cudaFree,240,24878618,24.879,0.104
+cuLibraryLoadData,1,7746130,7.746,7.746
+cudaLaunchKernel,30,1062561,1.063,0.035
+cuKernelGetName,30,25192,0.025,0.001
+cuModuleGetLoadingMode,1,4722,0.005,0.005
+cuLibraryGetKernel,1,621,0.001,0.001

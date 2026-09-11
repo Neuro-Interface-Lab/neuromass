@@ -164,6 +164,8 @@ void simu_sparse_cuda(
     cudaFree(d_omega);
     cudaFree(d_theta0);
     cudaFree(d_output);
+    cudaFree(d_row);
+    cudaFree(d_col);
 }
 
 // WRAPPER MEAN-FIELD AVEC extern "C"

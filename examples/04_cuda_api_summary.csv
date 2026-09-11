@@ -1,0 +1,17 @@
+
+NOTICE: Existing SQLite export found: /tmp/nsys-report-cc6c.sqlite
+        It is assumed file was previously exported from: /tmp/nsys-report-cc6c.nsys-rep
+        Consider using --force-export=true if needed.
+
+Processing [/tmp/nsys-report-cc6c.sqlite] with [/opt/nvidia/nsight-systems/2025.6.3/host-linux-armv8/reports/cuda_api_sum.py]... 
+Time (%),Total Time (ns),Num Calls,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+92.7,28998553837,28,1035662637.0,260153722.0,9863065,4126942814,1411405299.4,cudaDeviceSynchronize
+2.9,899476290,112,8031038.3,127301.0,2148,129120600,25178879.8,cudaMalloc
+2.7,845927826,112,7552927.0,106305.5,2297,102243096,23487925.7,cudaFree
+1.7,541230852,112,4832418.3,86282.0,4074,91107151,15567793.7,cudaMemcpy
+0.0,7069204,1,7069204.0,7069204.0,7069204,7069204,0.0,cuLibraryLoadData
+0.0,1198565,28,42805.9,29468.0,15351,300269,52734.5,cudaLaunchKernel
+0.0,48185,28,1720.9,1889.0,195,2537,639.3,cuKernelGetName
+0.0,4046,1,4046.0,4046.0,4046,4046,0.0,cuModuleGetLoadingMode
+0.0,861,1,861.0,861.0,861,861,0.0,cuLibraryGetKernel
+

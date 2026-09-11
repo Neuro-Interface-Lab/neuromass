@@ -1,0 +1,3 @@
+Direction,Temps_total_ms,Temps_pourcent,Volume_MB,Volume_GB,Volume_pourcent,Duree_moyenne_ms,Nb_transferts
+CPU_to_GPU,530.04,99.9,48423.41,47.29,99.8,6.31,84
+GPU_to_CPU,0.56,0.1,86.90,0.08,0.2,0.020,28
