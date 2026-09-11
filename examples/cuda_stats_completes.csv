@@ -1,0 +1,11 @@
+Categorie,Métrique,Valeur,Unite
+Kernels,Total_instances,28,
+Kernels,Temps_total,28.99,secondes
+Kernels,Temps_moyen,1.035,secondes
+Kernels,Temps_min,0.010,secondes
+Kernels,Temps_max,4.127,secondes
+Transferts,CPU_to_GPU_volume,48423.41,MB
+Transferts,CPU_to_GPU_temps,530.04,ms
+Transferts,GPU_to_CPU_volume,86.90,MB
+Transferts,GPU_to_CPU_temps,0.56,ms
+Ratio,Calcul/Transfert,54.7,x

@@ -16,7 +16,7 @@ OMP_LINK_ARGS = ["-fopenmp"]
 CUDA_AVAILABLE = os.system("which nvcc > /dev/null 2>&1") == 0
 
 cuda_objects = []
-cuda_link_args = []
+cuda_include_dirs = []
 cuda_library_dirs = []
 cuda_link_args = []
 

@@ -47,7 +47,18 @@ cnp.import_array()
 
 
 cdef extern from "kuramoto_c_kernel.h":
-    void simulate_naive_kuramoto_c(
+    void c_simulate_naive_kuramoto_cpu "simulate_naive_kuramoto_cpu"(
+        const float* adjacency,
+        const float* omega,
+        const float* theta0,
+        float epsilon,
+        float dt,
+        int n_nodes,
+        int n_steps,
+        float* output
+    )
+
+    void c_simulate_naive_kuramoto_gpu "simulate_naive_kuramoto_gpu"(
         const float* adjacency,
         const float* omega,
         const float* theta0,
@@ -68,7 +79,23 @@ cdef extern from "kuramoto_c_kernel.h":
         float* output
     )
 
-    void c_simu_sparse "simu_sparse"(
+    void c_simu_sparse_cpu "simu_sparse_cpu"(
+        const float* edge_values,
+        const int* edge_rows,
+        const int* edge_cols,
+        const float* omega,
+        const float* theta0,
+        float epsilon,
+        float dt,
+        int n_nodes,
+        int n_steps,
+        int n_edges,
+        const int* row,
+        const int* col,
+        float* output
+    )
+
+    void c_simu_sparse_gpu "simu_sparse_gpu"(
         const float* edge_values,
         const int* edge_rows,
         const int* edge_cols,
@@ -116,7 +143,7 @@ def simu_para_complexe(
 
 
 
-def simulate_naive_kuramoto(
+def simulate_naive_kuramoto_cpu(
      cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] adjacency,
      cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] omega,
      cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] theta0,
@@ -132,7 +159,7 @@ def simulate_naive_kuramoto(
          dtype=np.float32,
      )
 
-     simulate_naive_kuramoto_c(
+     c_simulate_naive_kuramoto_cpu(
          &adjacency[0, 0],
          &omega[0],
          &theta0[0],
@@ -145,8 +172,38 @@ def simulate_naive_kuramoto(
 
      return theta
 
+def simulate_naive_kuramoto_gpu(
+    cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] adjacency,
+    cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] omega,
+    cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] theta0,
+    float epsilon,
+    float dt,
+    int n_steps,
+):
+    """Version GPU (CUDA) du solveur Kuramoto."""
 
-def simu_sparse(
+    cdef int n_nodes = omega.shape[0]
+    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] theta = np.zeros(
+        (n_nodes, n_steps + 1),
+        dtype=np.float32,
+    )
+
+    c_simulate_naive_kuramoto_gpu(
+        &adjacency[0, 0],
+        &omega[0],
+        &theta0[0],
+        epsilon,
+        dt,
+        n_nodes,
+        n_steps,
+        &theta[0, 0],
+    )
+
+    return theta
+
+
+
+def simu_sparse_cpu(
     cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] edge_values,
     int[::1] edge_rows,
     int[::1] edge_cols,
@@ -159,18 +216,17 @@ def simu_sparse(
     int[::1] row,
     int[::1] col,
 ):
-    """Explicit Euler solver backed by the C sparse Kuramoto kernel."""
-
+    """Version CPU du solveur sparse."""
     cdef int n_nodes = omega.shape[0]
     cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] theta = np.zeros(
         (n_nodes, n_steps + 1),
         dtype=np.float32,
     )
-
-    c_simu_sparse(
+    
+    c_simu_sparse_cpu(
         &edge_values[0],
-        <const int *> &edge_rows[0],
-        <const int *> &edge_cols[0],
+        <const int*> &edge_rows[0],
+        <const int*> &edge_cols[0],
         &omega[0],
         &theta0[0],
         epsilon,
@@ -178,9 +234,48 @@ def simu_sparse(
         n_nodes,
         n_steps,
         n_edges,
-        <const int *> &row[0],
-        <const int *> &col[0],
+        <const int*> &row[0],
+        <const int*> &col[0],
         &theta[0, 0],
     )
+    
+    return theta
 
+
+def simu_sparse_gpu(
+    cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] edge_values,
+    int[::1] edge_rows,
+    int[::1] edge_cols,
+    cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] omega,
+    cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] theta0,
+    float epsilon,
+    float dt,
+    int n_steps,
+    int n_edges,
+    int[::1] row,
+    int[::1] col,
+):
+    """Version GPU du solveur sparse."""
+    cdef int n_nodes = omega.shape[0]
+    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] theta = np.zeros(
+        (n_nodes, n_steps + 1),
+        dtype=np.float32,
+    )
+    
+    c_simu_sparse_gpu(
+        &edge_values[0],
+        <const int*> &edge_rows[0],
+        <const int*> &edge_cols[0],
+        &omega[0],
+        &theta0[0],
+        epsilon,
+        dt,
+        n_nodes,
+        n_steps,
+        n_edges,
+        <const int*> &row[0],
+        <const int*> &col[0],
+        &theta[0, 0],
+    )
+    
     return theta

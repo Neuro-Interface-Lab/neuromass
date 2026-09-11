@@ -63,10 +63,10 @@ def main():
     n_measures = 4
 
     # Différentes tailles à tester 
-    N_values = [100, 200, 250, 255, 260,  500, 1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000]
+    N_values = [500, 1000, 5000, 10000, 20000, 30000, 40000 ]
 
    
-    print("Test de performance : Cac naive (DENSE)")
+    print("Test de performance : Cas naive (DENSE)")
    
     print(f"dt = {dt}s, T = {T}s, steps = {n_steps}")
     print(f"Nombre de mesures par N = {n_measures}\n")

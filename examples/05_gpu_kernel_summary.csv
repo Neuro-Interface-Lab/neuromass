@@ -1,0 +1,9 @@
+
+NOTICE: Existing SQLite export found: /tmp/nsys-report-cc6c.sqlite
+        It is assumed file was previously exported from: /tmp/nsys-report-cc6c.nsys-rep
+        Consider using --force-export=true if needed.
+
+Processing [/tmp/nsys-report-cc6c.sqlite] with [/opt/nvidia/nsight-systems/2025.6.3/host-linux-armv8/reports/cuda_gpu_kern_sum.py]... 
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+100.0,28993113888,28,1035468353.1,259904464.0,9836800,4126834080,1411347569.6,"kernel_naive_kuramoto_cuda(const float *, const float *, const float *, float, float, int, int, float *)"
+

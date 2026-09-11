@@ -51,7 +51,7 @@ void simu_sparse_cuda(
 
 
 
-void simulate_naive_kuramoto_c(
+void simulate_naive_kuramoto_cpu(
     const float* adjacency,
     const float* omega,
     const float* theta0,
@@ -61,51 +61,25 @@ void simulate_naive_kuramoto_c(
     int n_steps,
     float* output
 ) {
-    int i, j, step;
     int stride = n_steps + 1;
-    float coupling, weight;
-    printf(" simulate_naive_kuramoto_c appelée avec N = %d\n", n_nodes);
+    printf("CPU simulate_naive_kuramoto_cpu appelée\n");
+    printf("   N = %d, steps = %d\n", n_nodes, n_steps);
 
-
-    // --- Copie initiale (CPU) ---
+    // Copie initiale
     #pragma omp parallel for
-    for (i = 0; i < n_nodes; ++i) {
+    for (int i = 0; i < n_nodes; ++i) {
         output[i * stride] = theta0[i];
     }
-    int use_gpu = 0;
-    if (n_nodes > 1000) {  // ← SEUIL
-        int cuda_available = 0;
-        cudaError_t err = cudaGetDeviceCount(&cuda_available);
-        if (err == cudaSuccess && cuda_available > 0) {
-            use_gpu = 1;
-            printf(" [DENSE] Utilisation du GPU pour N = %d\n", n_nodes);
-        }else {
-            printf(" [DENSE] CUDA non disponible, utilisation CPU\n");
-            
-        }
-    } else {
-        printf("[DENSE] N=%d <= 1000, utilisation CPU (overhead GPU trop grand)\n", n_nodes);
-    }
-    
 
-    if (use_gpu) {
-        simulate_naive_kuramoto_cuda(
-            adjacency, omega, theta0, epsilon, dt,
-            n_nodes, n_steps, output
-        );
-        return;
-    }
-    printf("[DENSE] Version CPU avec OpenMP pour N = %d\n", n_nodes);
-    
-    for (step = 0; step < n_steps; ++step) {
-        // Parallélisation sur les oscillateurs
-        #pragma omp parallel for private(j, coupling, weight)
-        for (i = 0; i < n_nodes; ++i) {
-            coupling = 0.0f;
+    // Boucle temporelle avec OpenMP
+    for (int step = 0; step < n_steps; ++step) {
+        #pragma omp parallel for
+        for (int i = 0; i < n_nodes; ++i) {
+            float coupling = 0.0f;
             float theta_i = output[i * stride + step];
             
-            for (j = 0; j < n_nodes; ++j) {
-                weight = adjacency[i * n_nodes + j];
+            for (int j = 0; j < n_nodes; ++j) {
+                float weight = adjacency[i * n_nodes + j];
                 if (weight != 0.0f) {
                     coupling += weight * sinf(output[j * stride + step] - theta_i);
                 }
@@ -116,10 +90,52 @@ void simulate_naive_kuramoto_c(
             );
         }
     }
+    
+    printf("CPU Version CPU terminée pour N = %d\n", n_nodes);
 }
 
 
-void simu_sparse(
+
+
+void simulate_naive_kuramoto_gpu(
+    const float* adjacency,
+    const float* omega,
+    const float* theta0,
+    float epsilon,
+    float dt,
+    int n_nodes,
+    int n_steps,
+    float* output
+) {
+    printf("GPU simulate_naive_kuramoto_gpu appelée\n");
+    printf("   N = %d, steps = %d\n", n_nodes, n_steps);
+    
+    // Vérifier si CUDA est disponible
+    int cuda_available = 0;
+    cudaError_t err = cudaGetDeviceCount(&cuda_available);
+    
+    if (err != cudaSuccess || cuda_available == 0) {
+        printf("GPU CUDA non disponible ! Utilisation du CPU à la place.\n");
+        simulate_naive_kuramoto_cpu(adjacency, omega, theta0, epsilon, dt, n_nodes, n_steps, output);
+        return;
+    }
+    
+    // Copie initiale (CPU)
+    int stride = n_steps + 1;
+    for (int i = 0; i < n_nodes; ++i) {
+        output[i * stride] = theta0[i];
+    }
+    
+    // Appeler le wrapper CUDA
+    simulate_naive_kuramoto_cuda(
+        adjacency, omega, theta0, epsilon, dt,
+        n_nodes, n_steps, output
+    );
+    
+    printf("GPU Version GPU terminée pour N = %d\n", n_nodes);
+}
+
+void simu_sparse_cpu(
     const float *edge_values,
     const int *edge_rows,
     const int *edge_cols,
@@ -172,6 +188,50 @@ void simu_sparse(
     }
 
     free(coupling);
+}
+
+void simu_sparse_gpu(
+    const float *edge_values,
+    const int *edge_rows,
+    const int *edge_cols,
+    const float *omega,
+    const float *theta0,
+    float epsilon,
+    float dt,
+    int n_nodes,
+    int n_steps,
+    int n_edges,
+    const int *row,
+    const int *col,
+    float *output
+) {
+    printf("GPU simu_sparse_gpu appelée\n");
+    printf("   N = %d, steps = %d, edges = %d\n", n_nodes, n_steps, n_edges);
+    
+    // Vérifier si CUDA est disponible
+    int cuda_available = 0;
+    cudaError_t err = cudaGetDeviceCount(&cuda_available);
+    
+    if (err != cudaSuccess || cuda_available == 0) {
+        printf("GPU CUDA non disponible ! Utilisation du CPU.\n");
+        simu_sparse_cpu(edge_values, edge_rows, edge_cols, omega, theta0, 
+                    epsilon, dt, n_nodes, n_steps, n_edges, row, col, output);
+        return;
+    }
+    
+    // Copie initiale (CPU)
+    int stride = n_steps + 1;
+    for (int i = 0; i < n_nodes; ++i) {
+        output[i * stride] = theta0[i];
+    }
+    
+    // Appeler le wrapper CUDA sparse
+    simu_sparse_cuda(
+        edge_values, edge_rows, edge_cols, omega, theta0, epsilon, dt,
+        n_nodes, n_steps, n_edges, row, col, output
+    );
+    
+    printf("GPU Version GPU sparse terminée pour N = %d\n", n_nodes);
 }
 void simu_para_complexe(
     const float *omega,
