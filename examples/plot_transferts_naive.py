@@ -25,7 +25,7 @@ def main():
     colors = ["#4C72B0", "#DD8452"]  # bleu = H2D, orange = D2H
 
     # === SEULEMENT 2 GRAPHIQUES MAINTENANT ===
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 5))
 
     # --- 1. Volume total transféré par direction ---
     ax1 = axes[0]

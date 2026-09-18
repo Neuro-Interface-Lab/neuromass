@@ -23,7 +23,7 @@ df_plot = df_plot.sort_values("temps_total_ms", ascending=False)
 # 1. Temps total par interaction
 # ============================================================
 
-plt.figure(figsize=(11, 6))
+plt.figure(figsize=(6, 5))
 
 bars = plt.bar(
     df_plot["interaction"],
@@ -69,7 +69,7 @@ df_plot["pourcentage"] = (
     df_plot["temps_total_ms"] / temps_total * 100
 )
 
-plt.figure(figsize=(11, 6))
+plt.figure(figsize=(6, 5))
 
 bars = plt.bar(
     df_plot["interaction"],

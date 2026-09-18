@@ -27,7 +27,7 @@ with open(fichier) as f:
 df = pd.DataFrame(data)
 df["temps_s"] = (df["timestamp"] - df["timestamp"].iloc[0]).dt.total_seconds()
 
-fig, axes = plt.subplots(3, 1, figsize=(12, 9), sharex=True)
+fig, axes = plt.subplots(3, 1, figsize=(6, 5), sharex=True)
 
 axes[0].plot(df["temps_s"], df["gpu_power_W"], color="red")
 axes[0].set_ylabel("Puissance GPU (W)")

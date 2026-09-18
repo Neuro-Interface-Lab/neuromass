@@ -7,15 +7,14 @@ df = pd.read_csv(fichier)
 
 df = df.dropna(subset=["N_nodes"])
 
-# ============================================================
 # Graphe
-# ============================================================
 
-fig, ax1 = plt.subplots(figsize=(11, 6))
 
-# -------------------------
+fig, ax1 = plt.subplots(figsize=(6, 5))
+
+
 # Nombre de blocs
-# -------------------------
+
 ligne1, = ax1.plot(
     df["N_nodes"],
     df["nombre_blocs"],
@@ -39,9 +38,9 @@ for x, y in zip(df["N_nodes"], df["nombre_blocs"]):
         fontsize=9
     )
 
-# -------------------------
+
 # Nombre de threads
-# -------------------------
+
 ax2 = ax1.twinx()
 
 ligne2, = ax2.plot(
@@ -65,9 +64,6 @@ for x, y in zip(df["N_nodes"], df["threads_lances"]):
         fontsize=9
     )
 
-# -------------------------
-# Titre et légende
-# -------------------------
 
 plt.title("Configuration du lancement CUDA en fonction de N")
 

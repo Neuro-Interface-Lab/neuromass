@@ -86,7 +86,7 @@ __global__ void kernel_meanfield_sums(
     
     float theta_i = theta[i * stride + step];
 
-    // Accumulation atomique (simple mais efficace pour ce cas)
+    // Accumulation 
     atomicAdd(S, sinf(theta_i));
     atomicAdd(C, cosf(theta_i));
 }
@@ -98,8 +98,8 @@ __global__ void kernel_meanfield_update(
     int n_nodes,
     int n_steps,
     float* output,
-    float S,                 // ← Somme des sin (calculée sur GPU)
-    float C,                 // ← Somme des cos (calculée sur GPU)
+    float S,                 // Somme des sin calculée sur GPU
+    float C,                 // Somme des cos calculée sur GPU
     int step
 ) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;

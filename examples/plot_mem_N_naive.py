@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 fichier = "08_memoire_gpu_par_N.csv"
 df = pd.read_csv(fichier)
 
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(6, 5))
 
 # Tracer la mémoire totale en fonction de N
 ax.plot(

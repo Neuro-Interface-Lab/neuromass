@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 df = pd.read_csv("08_memoire_gpu_sparse_par_N.csv")
 
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(6, 5))
 
 # --- Mémoire totale sparse ---
 ax.plot(df["N"], df["total_GPU_memory_MB"],

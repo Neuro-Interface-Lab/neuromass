@@ -9,12 +9,14 @@ import subprocess
 NATIVE_DIR = "src/neuromass/models/kuramoto/_native"
 NUMPY_INCLUDE = np.get_include()
 
+#Flags de compilation OpenMP
 OMP_COMPILE_ARGS = ["-fopenmp", "-O3"]
 OMP_LINK_ARGS = ["-fopenmp"]
 
-
+# DÉTECTION AUTOMATIQUE DE CUDA
 CUDA_AVAILABLE = os.system("which nvcc > /dev/null 2>&1") == 0
 
+# Listes qui seront remplies si CUDA est présent
 cuda_objects = []
 cuda_include_dirs = []
 cuda_library_dirs = []
@@ -26,8 +28,10 @@ if CUDA_AVAILABLE:
     CUDA_HOME = os.path.dirname(os.path.dirname(nvcc_path))
     print(f"CUDA_HOME detecte : {CUDA_HOME}")
 
+    # Récupère tous les fichiers .cu du dossier natif
     cu_files = glob.glob(f"{NATIVE_DIR}/*.cu")
 
+    # Compile chaque .cu en .o avec nvcc
     for cu_file in cu_files:
         obj_file = cu_file.replace(".cu", ".o")
         subprocess.run([
@@ -42,6 +46,7 @@ if CUDA_AVAILABLE:
     )
     cuda_objects.append(dlink_file)
 
+    # Chemins et flags CUDA pour le link final
     cuda_include_dirs = [f"{CUDA_HOME}/include"]
     cuda_library_dirs = [f"{CUDA_HOME}/lib64"]
     cuda_link_args = ["-lcudart"]

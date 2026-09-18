@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 df = pd.read_csv("03_configuration_gpu_sparse.csv")
 
-fig, ax1 = plt.subplots(figsize=(14, 7))
+fig, ax1 = plt.subplots(figsize=(6, 5))
 
 # =========================================================
 # Axe gauche : Threads lancés
