@@ -1,4 +1,6 @@
 __pycache__/
+examples/*.log
+
 .DS_Store
 *.py[cod]
 *.so
