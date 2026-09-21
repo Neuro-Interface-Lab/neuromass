@@ -44,4 +44,4 @@ fig.suptitle("Benchmark à 8 threads : Naive vs Sparse vs Mean-Field", fontsize=
 plt.tight_layout()
 plt.savefig("benchmark_8threads_comparison.png", dpi=150)
 plt.show()
-print("✅ Sauvegardé : benchmark_8threads_comparison.png")
+print("Sauvegardé : benchmark_8threads_comparison.png")
